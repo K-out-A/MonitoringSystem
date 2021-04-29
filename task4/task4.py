@@ -32,18 +32,35 @@ def main(N, m, t):
             sub_net = address.split(".")[0:3]
             sub_net = ".".join(sub_net)
             if address not in df["address"]:
-                df = df.append(pd.DataFrame({"address":address, "flag":False, "first_date":date, "first_result":result, "count":0, "last_date":None, "last_result":None, "ave_result":result ,"sub_net":sub_net}, index=[address]))
+                df = df.append(pd.DataFrame({"address":address, "flag":False, "first_date":date, "first_result":result.replace('\n', ''), "count":0, "last_date":None, "last_result":None, "ave_result":result ,"sub_net":sub_net}, index=[address]))
                 if "-" in result and df.at[address, "count"]==0:
                     df.at[address, "count"] += 1
                     df.at[address, "flag"] = True
                     #print("add -> {}, count -> {}".format(address, df.at[address, "count"]))
             else:
+                df.at[address, "first_result"] = df.at[address, "first_result"]+","+result.replace('\n', '')
+                box = []
+                box = df.at[address, "first_result"].split(",")
+                if (len(box[-1*m:])>=m):
+                    sum = 0
+                    for i in range(m):
+                        if box[-1*i+(-1)] != "-" :
+                            sum = sum + int(box[-1*i+(-1)])
+                        ave = sum/m
+                    #print("ave -> " + str(ave))
+                    if ave >= t:
+                        print("【警告】負荷状態のサーバがあります！")
+                        print("故障状態のサーバアドレス：{}".format(address))
+                        #print(box[-1*m:])
+                        print("直近{}回における平均応答時間：{}ミリ秒".format(m, ave))
+                        print("故障期間：{} から {}".format(str2date(df.at[address, "first_date"]), str2date(date)))
+                        print("------------------------------------------------------")
                 if "-" in result:
                     df.at[address, "count"] += 1
                     if df.at[address, "flag"] == False:
                         df.at[address, "flag"] = True
                         df.at[address, "first_date"] = date
-                        df.at[address, "first_result"] = result
+                        df.at[address, "first_result"] = result.replace('\n', '')
                         ##print("address -> {}, Fdate -> {}, count -> {}".format(address, df.at[address, "first_date"], df.at[address, "count"]))
                     if df.at[address, "count"]>=N:
                         print("故障状態のサーバアドレス：{}".format(address))
@@ -63,7 +80,7 @@ def main(N, m, t):
             #print("break")
             break
     f.close() 
-    print(df)
+    #print(df)
 
 def str2date(date):
     YYYY = date[0:4]
